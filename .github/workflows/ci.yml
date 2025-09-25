@@ -1,0 +1,48 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          server/frontend/package-lock.json
+          server/database/package-lock.json
+
+    - name: Install frontend dependencies
+      run: cd server/frontend && npm ci
+
+    - name: Build frontend
+      run: cd server/frontend && npm run build
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Python dependencies
+      run: |
+        cd server
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Django checks
+      run: |
+        cd server
+        python manage.py check
+
+    - name: Install Express dependencies
+      run: cd server/database && npm ci
